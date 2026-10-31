@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+
+import certifi
 
 from homeassistant.components.ffmpeg import get_ffmpeg_manager
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_VERIFY_SSL, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -32,6 +35,8 @@ from .const import (
 )
 from .plex import PlexBridge
 from .view import PlexStreamBridgeStreamView
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.CAMERA, Platform.MEDIA_PLAYER]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -82,6 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEn
             translation_placeholders={"binary": ffmpeg_binary},
         )
 
+    ca_file = await hass.async_add_executor_job(certifi.where) if verify_ssl else None
     options = entry.options
     channels = [
         Channel(
@@ -92,6 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEn
             options.get(CONF_MAX_RESOLUTION, DEFAULT_MAX_RESOLUTION),
             int(options.get(CONF_MAX_BITRATE, DEFAULT_MAX_BITRATE)),
             options.get(CONF_REENCODE_VIDEO, DEFAULT_REENCODE_VIDEO),
+            ca_file,
         )
         for number in range(1, int(options.get(CONF_CHANNELS, DEFAULT_CHANNELS)) + 1)
     ]
@@ -105,6 +112,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEn
         _stream_base(hass, options.get(CONF_LOCAL_URL)),
         plex_device.id if plex_device else None,
     )
+    _async_remove_stale_channels(hass, entry, len(channels))
+
+    @callback
+    def _async_plex_state_changed() -> None:
+        """Follow the Plex server: channels are unavailable while it's not loaded."""
+        available = plex_entry.state is ConfigEntryState.LOADED
+        if available == bridge.available:
+            return
+        bridge.available = available
+        if available:
+            _LOGGER.info("Plex server %s is available again", plex_entry.title)
+        else:
+            _LOGGER.warning("Plex server %s is unavailable", plex_entry.title)
+        for channel in channels:
+            channel.async_update_listeners()
+
+    entry.async_on_unload(plex_entry.async_on_state_change(_async_plex_state_changed))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -116,6 +140,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigE
         for channel in entry.runtime_data.channels:
             await channel.async_shutdown()
     return unloaded
+
+
+@callback
+def _async_remove_stale_channels(
+    hass: HomeAssistant, entry: PlexStreamBridgeConfigEntry, channel_count: int
+) -> None:
+    """Remove devices (and their entities) for channels beyond the configured count."""
+    device_registry = dr.async_get(hass)
+    current = {(DOMAIN, f"{entry.unique_id}_{number}") for number in range(1, channel_count + 1)}
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        if not device.identifiers & current:
+            device_registry.async_update_device(device.id, remove_config_entry_id=entry.entry_id)
 
 
 def _stream_base(hass: HomeAssistant, override: str | None) -> str:

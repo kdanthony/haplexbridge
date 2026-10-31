@@ -77,10 +77,28 @@ Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /
 2. Restart Home Assistant.
 3. **Settings → Devices & services → Add integration → Plex Stream Bridge**, and pick
    your Plex server.
-4. Optional: **Configure** to set the number of channels (1–4), maximum
-   resolution and bitrate, or to turn off video re-encoding.
+4. Optional: **Configure** to change the options below.
 
-The channels appear as devices under your Plex server's device.
+The channels appear as devices under your Plex server's device. Each channel is
+available while the Plex integration has the server loaded, and unavailable
+otherwise.
+
+### Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| Number of channels | 1 | Channels (1–4). Each is a camera and a media player that play one video at a time. Lowering it removes the extra channels' devices and entities. |
+| Maximum resolution | 1080p | The largest size Plex sends (480p, 720p, 1080p). |
+| Maximum video bitrate | 8000 kbps | Caps both Plex's output and the re-encode. |
+| Re-encode video for smooth WebRTC playback | On | See [Smooth playback and CPU use](#smooth-playback-and-cpu-use). |
+| Home Assistant URL for the stream worker | (empty) | Only needed when HA can't reach itself at the address it listens on (see [Networking](#networking)). |
+
+## Remove
+
+1. **Settings → Devices & services → Plex Stream Bridge → ⋮ → Delete.** This
+   removes the channels' devices and entities; nothing in Plex changes.
+2. To uninstall, delete `custom_components/plex_stream_bridge` (or remove it in
+   HACS) and restart Home Assistant.
 
 ## Playing something
 
@@ -125,11 +143,47 @@ the picture stutter and jump. So by default each channel re-encodes the video
 with libx264 (`ultrafast`, no B-frames, a keyframe every 2 seconds, capped at
 your maximum bitrate).
 
-That costs about one CPU core on the Home Assistant host while someone is
-watching a channel; nothing runs otherwise. (Measured on an Intel N95: ~100% of
-one of its four cores, at 720p or 1080p alike, since most of it is decoding.)
+That costs some CPU on the Home Assistant host while someone is watching a
+channel; nothing runs otherwise. Measured on an Intel N95: 20–36% of one of its
+four cores for typical TV and home video, up to about one core for demanding
+1080p sources.
 Turn off **Re-encode video for smooth WebRTC playback** to pass Plex's video
 through unchanged if you only watch over HLS or your media has no B-frames.
+
+## Troubleshooting
+
+- **Setup fails with an ffmpeg error.** The message says whether ffmpeg is
+  missing or can't encode with libx264; see [Install types](#install-types).
+- **Setup keeps retrying.** The Plex integration hasn't finished loading the
+  server yet; this resolves itself once Plex is loaded (up to a minute after a
+  restart).
+- **Channels are unavailable.** The Plex integration doesn't have the server
+  loaded. Check the Plex integration first.
+- **The camera shows nothing or keeps reconnecting.** Turn on debug logging for
+  Plex Stream Bridge and open the camera: the log shows the feed starting and
+  any error from Plex or ffmpeg (Plex tokens are masked). A refused transcode
+  usually means the Plex server is busy or can't transcode the file.
+- **The picture stutters or jumps.** Make sure **Re-encode video for smooth
+  WebRTC playback** is on.
+- **Live-action looks soft.** Check the file's resolution in Plex; standard
+  definition looks soft when stretched to a large card, more so than animation.
+- **Diagnostics.** **⋮ → Download diagnostics** on the integration gives channel
+  state with identifiers redacted; it never contains tokens or Plex URLs.
+
+## Security
+
+- Plex Stream Bridge has no credentials of its own; it uses the Plex
+  integration's connection.
+- Each channel's feed is served at `/api/plex_stream_bridge/…` without Home
+  Assistant login, because HA's stream worker and go2rtc can't send it. Access
+  needs that channel's random 256-bit token, which is regenerated on every
+  restart and only given to HA's own stream components.
+- ffmpeg connects to Plex with TLS verification whenever the Plex integration
+  verifies SSL, and Plex inputs are limited to network protocols.
+- ffmpeg receives the Plex stream URL, which includes your Plex token, on its
+  command line. Other processes that can see Home Assistant's process list
+  could read it while a channel plays. On Home Assistant OS that means only
+  add-ons granted host process access.
 
 ## Limitations
 

@@ -19,6 +19,7 @@ from enum import StrEnum
 import logging
 import secrets
 import time
+from typing import Any
 import uuid
 
 from aiohttp import web
@@ -27,7 +28,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
-from .plex import PlexBridge, PlexItem
+from .plex import PlexBridge, PlexItem, redact_token
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ END_TOLERANCE = 10  # seconds from the end that counts as "finished"
 MAX_FAST_FAILURES = 3
 FAST_FAILURE_SECONDS = 15
 FFMPEG_CHECK_TIMEOUT = 30
+# Plex inputs only ever need network protocols; never let a playlist reach file:.
+PLEX_INPUT_PROTOCOLS = "http,https,tls,tcp,crypto"
 
 
 class PlaybackState(StrEnum):
@@ -60,8 +63,9 @@ class Channel:
         max_resolution: str,
         max_bitrate: int,
         reencode_video: bool,
+        ca_file: str | None,
     ) -> None:
-        """Initialize."""
+        """Initialize; ``ca_file`` enables TLS verification of Plex."""
         self.hass = hass
         self.bridge = bridge
         self.number = number
@@ -70,6 +74,7 @@ class Channel:
         self._max_resolution = max_resolution
         self._max_bitrate = max_bitrate
         self._reencode_video = reencode_video
+        self._ca_file = ca_file
 
         self.item: PlexItem | None = None
         self.state = PlaybackState.IDLE
@@ -100,7 +105,8 @@ class Channel:
         return lambda: self._listeners.remove(update)
 
     @callback
-    def _notify(self) -> None:
+    def async_update_listeners(self) -> None:
+        """Tell the channel's entities to write their state."""
         for update in list(self._listeners):
             update()
 
@@ -153,6 +159,26 @@ class Channel:
         if self._producer:
             self._producer.cancel()
 
+    def as_diagnostics(self) -> dict[str, Any]:
+        """Channel state for diagnostics (no tokens or URLs)."""
+        item = self.item
+        return {
+            "number": self.number,
+            "state": self.state,
+            "position": round(self.position),
+            "item": None
+            if item is None
+            else {
+                "rating_key": item.rating_key,
+                "media_type": item.media_type,
+                "duration": round(item.duration),
+            },
+            "reencode_video": self._reencode_video,
+            "verify_tls": self._ca_file is not None,
+            "readers": len(self._readers),
+            "feed_running": self._proc is not None and self._proc.returncode is None,
+        }
+
     # -- feed ------------------------------------------------------------
 
     @callback
@@ -164,7 +190,7 @@ class Channel:
         so the cleanest switch is to end the HTTP response and let it reconnect.
         """
         self._close_readers()
-        self._notify()
+        self.async_update_listeners()
 
     def _close_readers(self, readers: set[asyncio.Queue[bytes | None]] | None = None) -> None:
         """
@@ -197,7 +223,7 @@ class Channel:
         try:
             while (chunk := await queue.get()) is not None:
                 await response.write(chunk)
-        except ConnectionResetError, asyncio.CancelledError:
+        except ConnectionResetError:
             pass
         finally:
             readers.discard(queue)
@@ -283,7 +309,7 @@ class Channel:
             _LOGGER.debug("Channel %s finished %s", self.number, self.item.label)
             self.item = None
             self._set(PlaybackState.IDLE, 0)
-            self._notify()
+            self.async_update_listeners()
             return
         if ran_for >= FAST_FAILURE_SECONDS:
             self._fast_failures = 0
@@ -298,7 +324,21 @@ class Channel:
             )
             self.item = None
             self._set(PlaybackState.IDLE, 0)
-            self._notify()
+            self.async_update_listeners()
+
+    def _plex_input(self, url: str) -> list[str]:
+        """
+        Input options for a Plex URL.
+
+        ffmpeg sends the Plex token in the URL, so verify Plex's certificate
+        like the Plex integration does instead of trusting ffmpeg's build
+        default (off in HA's image). The TLS options only exist for https
+        inputs; ffmpeg rejects them on http.
+        """
+        options = ["-protocol_whitelist", PLEX_INPUT_PROTOCOLS]
+        if self._ca_file and url.startswith("https://"):
+            options += ["-tls_verify", "1", "-ca_file", self._ca_file]
+        return options
 
     def _video_codec(self) -> list[str]:
         """
@@ -361,6 +401,7 @@ class Channel:
             return [
                 *base,
                 "-re",
+                *self._plex_input(url),
                 "-i",
                 url,
                 "-map",
@@ -394,6 +435,7 @@ class Channel:
                 "1",
                 "-framerate",
                 "5",
+                *self._plex_input(art),
                 "-i",
                 art,
                 *silence,
@@ -447,7 +489,7 @@ async def _drain_stderr(proc: asyncio.subprocess.Process, number: int) -> str:
     assert proc.stderr is not None
     last = ""
     async for raw in proc.stderr:
-        if line := raw.decode(errors="replace").strip():
+        if line := redact_token(raw.decode(errors="replace").strip()):
             last = line
             _LOGGER.debug("Channel %s ffmpeg: %s", number, line)
     return last

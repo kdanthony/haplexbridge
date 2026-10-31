@@ -6,6 +6,9 @@
         "description": "Plex Stream Bridge uses the connection of a server already set up in the Plex integration.",
         "data": {
           "server_id": "Plex server"
+        },
+        "data_description": {
+          "server_id": "The Plex Media Server, as set up in the Plex integration, whose libraries the channels play from."
         }
       }
     },

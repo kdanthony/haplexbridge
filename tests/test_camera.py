@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from unittest.mock import MagicMock, patch
 
+from aiohttp import web
 import av
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -15,6 +16,7 @@ from custom_components.plex_stream_bridge.channel import PlaybackState
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.components.plex.models import PlexMediaSearchResult
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from .conftest import PLEX_URL, SERVER_ID, make_movie
 
@@ -128,6 +130,15 @@ def hls_playlist(tmp_path: Path) -> str:
     return str(playlist)
 
 
+@pytest.fixture
+async def plex_hls_url(hls_playlist: str, aiohttp_server) -> str:
+    """Serve the stand-in stream over HTTP, as Plex does; file: inputs are refused."""
+    app = web.Application()
+    app.router.add_static("/hls", Path(hls_playlist).parent)
+    server = await aiohttp_server(app)
+    return str(server.make_url("/hls/index.m3u8"))
+
+
 async def _read(client, url: str, seconds: float, path: Path) -> tuple[float, bool]:
     """Read a feed for up to `seconds`; return elapsed time and whether it hit EOF."""
     loop = asyncio.get_running_loop()
@@ -165,6 +176,7 @@ async def test_feed_end_to_end(
     mock_payload: MagicMock,
     hass_client_no_auth,
     hls_playlist: str,
+    plex_hls_url: str,
     tmp_path: Path,
 ) -> None:
     """Slate when idle, real-time Plex video shared by readers, idle again at the end."""
@@ -181,7 +193,7 @@ async def test_feed_end_to_end(
     movie = make_movie()
     movie.duration = 6000
     mock_payload.return_value = PlexMediaSearchResult(movie)
-    with patch.object(channel.bridge, "async_hls_url", return_value=hls_playlist) as hls_url:
+    with patch.object(channel.bridge, "async_hls_url", return_value=plex_hls_url) as hls_url:
         await hass.services.async_call(
             "media_player",
             "play_media",
@@ -208,3 +220,58 @@ async def test_feed_end_to_end(
 
     assert channel.state is PlaybackState.IDLE
     assert hass.states.get("media_player.plex_channel_1").state == "idle"
+
+
+async def _feed_body(client, channel, entry_id: str) -> bytes:
+    url = f"/api/plex_stream_bridge/{entry_id}/1/stream.ts?token={channel.access_token}"
+    async with client.get(url) as resp:
+        assert resp.status == 200
+        return await asyncio.wait_for(resp.read(), 10)
+
+
+async def test_feed_ends_when_plex_refuses(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_payload: MagicMock,
+    hass_client_no_auth,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """If Plex won't start a transcode, the reader is let go and the reason logged."""
+    channel = init_integration.runtime_data.channels[0]
+    mock_payload.return_value = PlexMediaSearchResult(make_movie())
+    await hass.services.async_call(
+        "media_player",
+        "play_media",
+        {
+            "entity_id": "media_player.plex_channel_1",
+            "media_content_type": "movie",
+            "media_content_id": f"plex://{SERVER_ID}/1",
+        },
+        blocking=True,
+    )
+    with patch.object(channel.bridge, "async_hls_url", side_effect=HomeAssistantError("refused")):
+        body = await _feed_body(await hass_client_no_auth(), channel, init_integration.entry_id)
+    assert body == b""
+    assert "cannot start a feed" in caplog.text
+
+
+async def test_feed_ends_without_ffmpeg(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_client_no_auth,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A vanished ffmpeg binary ends the feed with an error instead of hanging."""
+    channel = init_integration.runtime_data.channels[0]
+    channel._ffmpeg = "/nonexistent/ffmpeg"
+    body = await _feed_body(await hass_client_no_auth(), channel, init_integration.entry_id)
+    assert body == b""
+    assert "Could not start ffmpeg" in caplog.text
+
+
+async def test_camera_image_when_idle(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """An idle channel has no still image."""
+    with pytest.raises(HomeAssistantError):
+        await async_get_image(hass, CAMERA)

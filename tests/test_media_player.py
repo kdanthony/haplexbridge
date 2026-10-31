@@ -170,3 +170,18 @@ async def test_browse_media(
     assert response["success"]
     assert response["result"]["title"] == "Plex"
     mock_browse.assert_awaited_once_with(hass, None, None, platform="plex_stream_bridge")
+
+
+@pytest.mark.usefixtures("init_integration")
+async def test_poster_image(
+    hass: HomeAssistant, mock_payload: MagicMock, mock_get_plex_server: MagicMock
+) -> None:
+    """The poster comes from Plex; a lost server just means no poster."""
+    mock_payload.return_value = PlexMediaSearchResult(make_movie())
+    await _play(hass, f"plex://{SERVER_ID}/1")
+    entity = hass.data["entity_components"][MP_DOMAIN].get_entity(ENTITY_ID)
+
+    assert entity.media_image_url.endswith("w=500&h=750")
+    assert entity.media_image_hash == "1-/library/metadata/1/thumb/1"
+    mock_get_plex_server.side_effect = KeyError(SERVER_ID)
+    assert entity.media_image_url is None

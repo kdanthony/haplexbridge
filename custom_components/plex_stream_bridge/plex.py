@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import partial
 import logging
+import re
 from typing import Any
 
 import aiohttp
@@ -31,6 +32,13 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+_TOKEN_RE = re.compile(r"(X-Plex-Token=)[^&\s\"']+", re.IGNORECASE)
+
+
+def redact_token(text: str) -> str:
+    """Mask Plex tokens in text that may end up in logs (ffmpeg prints its URLs)."""
+    return _TOKEN_RE.sub(r"\1**REDACTED**", text)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -122,6 +130,7 @@ class PlexBridge:
         self.server_id = server_id
         self._client_id = client_id
         self._session = session
+        self.available = True
 
     def _ha_server(self) -> HAPlexServer:
         """Look up the Plex integration's server on each use to survive reloads."""
@@ -236,7 +245,7 @@ class PlexBridge:
                     return None
                 return await resp.read()
         except (aiohttp.ClientError, TimeoutError, HomeAssistantError) as err:
-            _LOGGER.debug("Could not fetch %s: %s", path, err)
+            _LOGGER.debug("Could not fetch %s: %s", path, redact_token(str(err)))
             return None
 
     async def async_stop_transcode(self, session_id: str) -> None:
@@ -248,4 +257,4 @@ class PlexBridge:
             async with self._session.get(url, timeout=aiohttp.ClientTimeout(total=10)):
                 pass
         except (aiohttp.ClientError, TimeoutError, HomeAssistantError) as err:
-            _LOGGER.debug("Could not stop transcode %s: %s", session_id, err)
+            _LOGGER.debug("Could not stop transcode %s: %s", session_id, redact_token(str(err)))

@@ -18,7 +18,8 @@ custom_components/plex_stream_bridge/
   plex.py          PlexBridge: everything that touches Plex, via the Plex integration
   channel.py       Channel: playback state + ffmpeg feed + fan-out; async_check_ffmpeg
   view.py          /api/plex_stream_bridge/<entry_id>/<n>/stream.ts?token=... (requires_auth=False)
-  entity.py        PlexChannelEntity base (device info, follows channel state)
+  entity.py        PlexChannelEntity base (device info, availability, follows channel state)
+  diagnostics.py   config entry diagnostics (client id redacted; never tokens or URLs)
   camera.py        PlexChannelCamera: stream_source -> the view; still image = artwork
   media_player.py  PlexChannelMediaPlayer: browse/play_media/play/pause/stop/seek
 tests/             pytest-homeassistant-custom-component suite
@@ -51,6 +52,11 @@ tests/             pytest-homeassistant-custom-component suite
 - **Slates**: idle = black (lavfi color + anullsrc), paused = the item's art
   looped. Both are encoded with libx264, so the stream never errors and backs
   off.
+- **Availability**: `bridge.available` follows the Plex entry's state via
+  `plex_entry.async_on_state_change`, logging once on loss and once on
+  recovery; entities report it through `PlexChannelEntity.available`.
+- **Stale channels**: setup removes devices (and so entities) for channel
+  numbers above the configured count (`_async_remove_stale_channels`).
 - **End and failure handling** (`_handle_play_exit`): exit 0 or near the end →
   idle; three failures within 15 s each → idle with an error log. Kills we
   request (`_kill_requested`) don't count as failures.
@@ -69,6 +75,15 @@ tests/             pytest-homeassistant-custom-component suite
 - **Plex returns 400 on `start.m3u8` unless `/video/:/transcode/universal/decision`
   is requested first** with the same params. `PlexBridge.async_hls_url` always
   does that; keep it.
+- **Never log the Plex token.** ffmpeg prints input URLs (which carry
+  `X-Plex-Token`) in its errors, so every logged ffmpeg line and Plex error
+  goes through `redact_token`.
+- **Verify Plex TLS in ffmpeg too**: HA's ffmpeg build defaults `tls_verify` to
+  off. When the Plex integration verifies SSL, https inputs get `-tls_verify 1
+  -ca_file <certifi>`. ffmpeg rejects these options on http inputs ("Option
+  ca_file not found"), so add them only for `https://` URLs. All Plex inputs get
+  `-protocol_whitelist http,https,tls,tcp,crypto`. Plex's variant and segment
+  URLs carry no token, so only the verified first request does.
 - The stop-transcode call can 404 for sessions that already ended; ignore it.
 - `X-Plex-Product=Plex Web` + platform `Chrome` is the profile that yields
   H.264 HLS; Xbox/Tizen profiles return 400.
@@ -120,9 +135,12 @@ Test notes:
   check (`mock_ffmpeg_check`) for setup tests.
 - Fixtures that create an aiohttp session must depend on `aioclient_mock`, or
   the session is created before the mock and makes real requests.
-- `test_camera.py::test_feed_end_to_end` runs real ffmpeg against a local HLS
-  file with B-frames and asserts the feed has none and plays at real time;
-  it's skipped without ffmpeg.
+- `test_camera.py::test_feed_end_to_end` runs real ffmpeg against a stand-in
+  HLS stream with B-frames, served over HTTP with `aiohttp_server` (the protocol
+  allowlist rejects `file:`), and asserts the feed has none and plays at real
+  time. It's skipped without ffmpeg.
+- Keep coverage above 95% for every module (Silver quality scale):
+  `pytest --cov=custom_components/plex_stream_bridge --cov-report=term-missing`.
 
 ## Releasing changes
 

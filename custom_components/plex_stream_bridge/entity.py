@@ -38,6 +38,11 @@ class PlexChannelEntity(Entity):
             device_info["via_device_id"] = via_device_id
         self._attr_device_info = device_info
 
+    @property
+    def available(self) -> bool:
+        """Available while the Plex integration has the server loaded."""
+        return self._channel.bridge.available
+
     async def async_added_to_hass(self) -> None:
         """Follow channel state changes."""
         await super().async_added_to_hass()
