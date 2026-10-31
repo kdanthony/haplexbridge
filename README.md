@@ -79,12 +79,27 @@ Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /
 
 ## Install
 
-1. Copy `custom_components/plex_stream_bridge` into your HA `config/custom_components/`
-   folder (or add this repository to HACS as a custom repository).
-2. Restart Home Assistant.
-3. **Settings → Devices & services → Add integration → Plex Stream Bridge**, and pick
-   your Plex server.
-4. Optional: **Configure** to change the options below.
+### With HACS (recommended)
+
+1. In Home Assistant, open **HACS → ⋮ → Custom repositories**.
+2. Add `https://github.com/kdanthony/haplexbridge` with the type **Integration**.
+3. Find **Plex Stream Bridge** in HACS, select **Download**, and restart Home
+   Assistant.
+4. **Settings → Devices & services → Add integration → Plex Stream Bridge**, and
+   pick your Plex server.
+
+HACS offers updates when a new release is published.
+
+### Manually
+
+1. Copy `custom_components/plex_stream_bridge` into your Home Assistant
+   `config/custom_components/` folder.
+2. Restart Home Assistant, then add the integration as in step 4 above.
+
+### After installing
+
+Optional: open the integration and select **Configure** to change the options
+below.
 
 The channels appear as devices under your Plex server's device. Each channel is
 available while the Plex integration has the server loaded, and unavailable
@@ -104,8 +119,8 @@ otherwise.
 
 1. **Settings → Devices & services → Plex Stream Bridge → ⋮ → Delete.** This
    removes the channels' devices and entities; nothing in Plex changes.
-2. To uninstall, delete `custom_components/plex_stream_bridge` (or remove it in
-   HACS) and restart Home Assistant.
+2. To uninstall, remove it in HACS (or delete `custom_components/plex_stream_bridge`)
+   and restart Home Assistant.
 
 ## Playing something
 
@@ -206,13 +221,22 @@ through unchanged if you only watch over HLS or your media has no B-frames.
 ## Development
 
 ```bash
-pip install pytest-homeassistant-custom-component ruff mypy
-pytest
+pip install -r requirements_test.txt
+pytest --cov=custom_components/plex_stream_bridge
 ruff check . && ruff format --check .
 mypy --strict --implicit-reexport --allow-untyped-calls --ignore-missing-imports custom_components/plex_stream_bridge
 ```
 
 The end-to-end feed test needs `ffmpeg` on the PATH; it is skipped otherwise.
+GitHub Actions run the same checks (`tests.yml`), plus HACS validation and
+hassfest (`validate.yml`), on every push.
+
+### Releasing
+
+1. Bump `version` in `custom_components/plex_stream_bridge/manifest.json` (and
+   `pyproject.toml`).
+2. Commit, push, and publish a GitHub release whose tag is that version with a
+   `v` prefix (for example `v0.4.0`). HACS offers the five latest releases.
 
 ## License
 

@@ -1,13 +1,13 @@
 {
   "domain": "plex_stream_bridge",
   "name": "Plex Stream Bridge",
-  "codeowners": ["@kanthony"],
+  "codeowners": ["@kdanthony"],
   "config_flow": true,
   "dependencies": ["ffmpeg", "http", "plex", "stream"],
-  "documentation": "https://github.com/kanthony/haplexbridge",
+  "documentation": "https://github.com/kdanthony/haplexbridge",
   "integration_type": "service",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/kanthony/haplexbridge/issues",
+  "issue_tracker": "https://github.com/kdanthony/haplexbridge/issues",
   "requirements": [],
-  "version": "0.3.1"
+  "version": "0.4.0"
 }

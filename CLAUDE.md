@@ -110,14 +110,13 @@ tests/             pytest-homeassistant-custom-component suite
 
 ## Development
 
-Python 3.14. Use a venv **outside the repo** with the harness pinned to the
-target HA version (an unpinned install resolves an old harness that fails to
-build `lru-dict`):
+Python 3.14. Use a venv **outside the repo**. `requirements_test.txt` pins
+the harness to the target HA version (an unpinned install resolves an old
+harness that fails to build `lru-dict`). Bump it together with the HA version
+you target.
 
 ```bash
-uv venv -p 3.14 ../.venv-psb && uv pip install --python ../.venv-psb/bin/python \
-  "pytest-homeassistant-custom-component==0.13.375" "lru-dict>=1.4.1" \
-  ha-ffmpeg av numpy PyTurboJPEG PlexAPI==4.18.2 plexauth==0.0.6 plexwebsocket==0.0.14 ruff mypy
+uv venv -p 3.14 ../.venv-psb && uv pip install --python ../.venv-psb/bin/python -r requirements_test.txt
 ```
 
 Before calling any change done, all of these must pass:
@@ -143,6 +142,18 @@ Test notes:
   `pytest --cov=custom_components/plex_stream_bridge --cov-report=term-missing`.
 
 ## Releasing changes
+
+- HACS: the repo is `kdanthony/haplexbridge` with one integration under
+  `custom_components/`; `hacs.json` has only `name` and the minimum HA version.
+  Brand images live in `custom_components/plex_stream_bridge/brand/`
+  (`icon.png` 256 px, `icon@2x.png` 512 px). HA 2026 serves them for custom
+  integrations, and they're original artwork; never use Plex's logo.
+- CI: `.github/workflows/tests.yml` (ruff, mypy, pytest with a 95% coverage
+  gate) and `validate.yml` (HACS action, hassfest). Running hassfest locally
+  means executing HA core's script, which needs the user's permission. The CI
+  run is the check.
+- Releases: tag `v<manifest version>` and publish a GitHub release. The user
+  pushes and publishes from GitHub Desktop or github.com; don't push.
 
 - Bump `version` in `manifest.json` and `pyproject.toml` together.
 - Changing the domain or unique ids is breaking (remove and re-add the entry).
