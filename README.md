@@ -77,6 +77,32 @@ Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /
 - An idle channel shows a black slate and a paused channel shows the item's
   artwork, so the camera stream never errors out and backs off.
 
+### How data updates
+
+Nothing is polled.
+
+- **Channel state** (what's playing, playing/paused/idle, position) lives in
+  Home Assistant and changes only when you act on a channel or an item ends,
+  so the media player and camera update immediately. The position is reported
+  with a timestamp and the frontend advances it on its own.
+- **Plex is contacted on demand**: when you browse, when you play something
+  (to look it up), when a feed starts (to start a transcode), and for artwork,
+  which is fetched once per item and size and cached.
+- **Availability** follows the Plex integration: channels are unavailable
+  whenever it doesn't have the server loaded, with no extra connection checks.
+- **Video** is only fetched while someone is watching a channel.
+
+## Use cases
+
+- **A TV on any dashboard.** Put a channel on a wall tablet or kiosk display
+  and play something without a smart TV or Plex client in that room.
+- **Picture-in-picture while cooking or working.** Keep a show running in a
+  corner of your usual dashboard.
+- **Scheduled viewing.** Start the next episode of a show at a set time, for
+  example cartoons in the kids' room after school.
+- **React to the house.** Pause when the doorbell rings or someone comes in,
+  and resume afterwards.
+
 ## Install
 
 ### With HACS (recommended)
@@ -142,6 +168,45 @@ to continue from Plex's saved position, or `"offset": <seconds>` to start at a
 given point. Music isn't supported.
 
 Pause, play, seek and stop are the standard `media_player` actions.
+
+### Automation examples
+
+Play the next unwatched episode of a show on weekdays at 16:00:
+
+```yaml
+triggers:
+  - trigger: time
+    at: "16:00:00"
+    weekday: [mon, tue, wed, thu, fri]
+actions:
+  - action: media_player.play_media
+    target:
+      entity_id: media_player.plex_channel_1
+    data:
+      media_content_type: show
+      media_content_id: 'plex://{"library_name": "Kids TV", "show.title": "Bluey"}'
+```
+
+Pause while the doorbell rings, then resume a minute later:
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.doorbell
+    to: "on"
+conditions:
+  - condition: state
+    entity_id: media_player.plex_channel_1
+    state: playing
+actions:
+  - action: media_player.media_pause
+    target:
+      entity_id: media_player.plex_channel_1
+  - delay: "00:01:00"
+  - action: media_player.media_play
+    target:
+      entity_id: media_player.plex_channel_1
+```
 
 ## Dashboard example
 

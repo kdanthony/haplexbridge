@@ -1,0 +1,104 @@
+# Self-assessment against Home Assistant's integration quality scale
+# (https://contributors.home-assistant.io/core/quality-scale/rules/).
+# The scale only formally applies to core integrations; this records how
+# Plex Stream Bridge measures up. Format matches core's quality_scale.yaml.
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: The integration registers no actions; it uses media_player's.
+  appropriate-polling:
+    status: exempt
+    comment: Nothing is polled; entities update when channel state changes.
+  brands: done
+  common-modules: done
+  config-flow: done
+  config-flow-test-coverage: done
+  dependency-transparency:
+    status: exempt
+    comment: No requirements of its own; it uses the Plex integration's PlexAPI.
+  docs-actions:
+    status: exempt
+    comment: The integration provides no actions.
+  docs-conditions:
+    status: exempt
+    comment: The integration provides no conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  docs-triggers:
+    status: exempt
+    comment: The integration provides no triggers.
+  entity-event-setup: done
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure:
+    status: done
+    comment: The config flow only offers Plex servers whose Plex entry is loaded.
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow:
+    status: exempt
+    comment: No credentials of its own; authentication belongs to the Plex integration.
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery:
+    status: exempt
+    comment: Nothing on the network to discover; servers come from the Plex integration.
+  discovery-update-info:
+    status: exempt
+    comment: No discovery; the Plex integration tracks the server's address.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices:
+    status: exempt
+    comment: Not device-based; supported HA installs and hardware are documented.
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: Channels come from the channel-count option, not from discovered devices.
+  entity-category:
+    status: exempt
+    comment: Both entities are primary entities with no category.
+  entity-device-class: done
+  entity-disabled-by-default:
+    status: exempt
+    comment: Every entity is needed to use a channel.
+  entity-translations: done
+  exception-translations: done
+  icon-translations:
+    status: exempt
+    comment: Entities use their domain's default icons.
+  reconfiguration-flow:
+    status: exempt
+    comment: No connection settings; the Plex server is the entry's identity.
+  repair-issues: done
+  stale-devices: done
+
+  # Platinum
+  async-dependency:
+    status: todo
+    comment: PlexAPI is synchronous; it comes from the Plex integration, which shares this limitation.
+  inject-websession:
+    status: done
+    comment: The integration's own HTTP requests use Home Assistant's shared session.
+  strict-typing:
+    status: todo
+    comment: The integration passes mypy --strict, but PlexAPI is untyped, so calls into it aren't checked.

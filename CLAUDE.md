@@ -8,6 +8,12 @@ in `README.md`; this file covers how the code works and why.
 
 Write code as a Home Assistant core developer would: follow core's current
 patterns (see "HA 2026 APIs" below) and don't reintroduce deprecated APIs.
+`custom_components/plex_stream_bridge/quality_scale.yaml` records the
+quality-scale self-assessment (Silver met, Gold met except exemptions; the two
+Platinum todos depend on PlexAPI). Keep it accurate when behaviour changes.
+hassfest skips it for custom integrations, so nothing checks it automatically.
+Don't add `quality_scale` to the manifest: on a custom integration that would
+look like an official rating.
 
 ## Layout
 
@@ -92,7 +98,8 @@ tests/             pytest-homeassistant-custom-component suite
   H.264 HLS; Xbox/Tizen profiles return 400.
 - ffmpeg is checked at setup with a one-frame lavfi→libx264 encode
   (`async_check_ffmpeg`): `ffmpeg_missing` / `ffmpeg_unsupported` raise
-  `ConfigEntryError`. HA's ffmpeg dependency doesn't guarantee either.
+  `ConfigEntryError` and create the `ffmpeg` Repairs issue, which a successful
+  setup deletes. HA's ffmpeg dependency doesn't guarantee either.
 - Stream URL base: `local_url` option, else `hass.config.api.host` (wildcard →
   `127.0.0.1`, IPv6 bracketed) when not using SSL, else the internal URL.
 

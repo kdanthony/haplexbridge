@@ -13,7 +13,11 @@ from custom_components.plex_stream_bridge.const import (
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+)
 
 from .conftest import SERVER_ID
 
@@ -68,13 +72,23 @@ async def test_ffmpeg_not_capable(
     loaded_plex_entry: MockConfigEntry,
     mock_get_plex_server: MagicMock,
     config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
     problem: str,
 ) -> None:
-    """Setup fails with a clear reason when ffmpeg can't produce feeds."""
+    """Setup fails with a clear reason and a repair when ffmpeg can't produce feeds."""
     with patch("custom_components.plex_stream_bridge.async_check_ffmpeg", return_value=problem):
         await hass.config_entries.async_setup(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
     assert config_entry.error_reason_translation_key == problem
+    issue = issue_registry.async_get_issue(DOMAIN, "ffmpeg")
+    assert issue is not None
+    assert issue.translation_key == problem
+
+    # Once ffmpeg works, setup succeeds and the repair goes away.
+    with patch("custom_components.plex_stream_bridge.async_check_ffmpeg", return_value=None):
+        await hass.config_entries.async_reload(config_entry.entry_id)
+    assert config_entry.state is ConfigEntryState.LOADED
+    assert issue_registry.async_get_issue(DOMAIN, "ffmpeg") is None
 
 
 @pytest.mark.parametrize(

@@ -78,5 +78,15 @@
     "ffmpeg_unsupported": {
       "message": "ffmpeg at {binary} cannot encode H.264 with libx264, which Plex Stream Bridge needs. Install an ffmpeg build with libx264 and restart Home Assistant."
     }
+  },
+  "issues": {
+    "ffmpeg_missing": {
+      "title": "ffmpeg not found",
+      "description": "Plex Stream Bridge needs ffmpeg, but none was found at {binary}. Install ffmpeg (or set ffmpeg_bin in the ffmpeg configuration), then restart Home Assistant."
+    },
+    "ffmpeg_unsupported": {
+      "title": "ffmpeg can't encode H.264",
+      "description": "The ffmpeg at {binary} can't encode H.264 with libx264, which Plex Stream Bridge needs for its video feeds. Install an ffmpeg build that includes libx264, then restart Home Assistant."
+    }
   }
 }

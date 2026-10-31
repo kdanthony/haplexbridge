@@ -12,7 +12,11 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_VERIFY_SSL, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers import (
+    config_validation as cv,
+    device_registry as dr,
+    issue_registry as ir,
+)
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
@@ -41,6 +45,8 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.CAMERA, Platform.MEDIA_PLAYER]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 WILDCARD_HOSTS = {"0.0.0.0", "::", ""}
+FFMPEG_ISSUE_ID = "ffmpeg"
+FFMPEG_DOCS_URL = "https://github.com/kdanthony/haplexbridge#install-types"
 
 
 @dataclass
@@ -81,11 +87,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEn
 
     ffmpeg_binary = get_ffmpeg_manager(hass).binary
     if problem := await async_check_ffmpeg(ffmpeg_binary):
+        # Also surface it in Repairs: the user can fix it, then restart.
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            FFMPEG_ISSUE_ID,
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            learn_more_url=FFMPEG_DOCS_URL,
+            translation_key=problem,
+            translation_placeholders={"binary": ffmpeg_binary},
+        )
         raise ConfigEntryError(
             translation_domain=DOMAIN,
             translation_key=problem,
             translation_placeholders={"binary": ffmpeg_binary},
         )
+    ir.async_delete_issue(hass, DOMAIN, FFMPEG_ISSUE_ID)
 
     ca_file = await hass.async_add_executor_job(certifi.where) if verify_ssl else None
     options = entry.options
