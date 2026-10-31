@@ -19,6 +19,36 @@ It has no credentials of its own.
 - Home Assistant 2026.8 or newer
 - The Plex integration set up and loaded for your server
 - `stream` and `ffmpeg` (both part of `default_config`)
+- An ffmpeg binary with the **libx264** encoder
+- A Plex server that can transcode (software transcoding is free; hardware
+  transcoding needs Plex Pass)
+
+### Install types
+
+| Install | Works out of the box? |
+| --- | --- |
+| Home Assistant OS, Supervised, Container | Yes. The official image ships ffmpeg with libx264, and go2rtc. |
+| Home Assistant Core (Python venv) | Install ffmpeg yourself, with libx264. Some distribution builds (such as Fedora's `ffmpeg-free`) leave it out. Without go2rtc, cameras play over HLS, so you can turn off video re-encoding. |
+
+Setup checks ffmpeg with a one-frame test encode and fails with an explanation
+if it's missing or lacks libx264. A non-default binary is set with `ffmpeg_bin`
+in the [ffmpeg configuration](https://www.home-assistant.io/integrations/ffmpeg/).
+
+### Hardware
+
+Re-encoding (on by default, see below) takes about a third to one core of an
+Intel N95 while a channel is watched. Low-power ARM boards such as a Raspberry
+Pi 4 or Home Assistant Green/Yellow will likely struggle to re-encode 1080p in
+real time; lower the maximum resolution to 720p or 480p, or turn re-encoding
+off if you watch over HLS. This is an estimate, not a measurement.
+
+### Networking
+
+HA's stream worker and go2rtc read each channel's feed from Home Assistant
+itself, on the address it listens on: `127.0.0.1` by default, or the first
+`server_host` if you've set one. If HA serves HTTPS directly, the internal URL is
+used instead. If neither works for your setup, set **Home Assistant URL for the
+stream worker** in the options.
 
 ## How it works
 

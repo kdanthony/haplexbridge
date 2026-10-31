@@ -14,7 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
 
-from .channel import Channel
+from .channel import Channel, async_check_ffmpeg
 from .const import (
     CONF_CHANNELS,
     CONF_CLIENT_ID,
@@ -35,6 +35,7 @@ from .view import PlexCameraStreamView
 
 PLATFORMS = [Platform.CAMERA, Platform.MEDIA_PLAYER]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+WILDCARD_HOSTS = {"0.0.0.0", "::", ""}
 
 
 @dataclass
@@ -73,8 +74,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexCameraConfigEntry) -
         async_get_clientsession(hass, verify_ssl=verify_ssl),
     )
 
-    options = entry.options
     ffmpeg_binary = get_ffmpeg_manager(hass).binary
+    if problem := await async_check_ffmpeg(ffmpeg_binary):
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key=problem,
+            translation_placeholders={"binary": ffmpeg_binary},
+        )
+
+    options = entry.options
     channels = [
         Channel(
             hass,
@@ -114,8 +122,12 @@ def _stream_base(hass: HomeAssistant, override: str | None) -> str:
     """URL at which HA itself (and go2rtc) can reach the stream view."""
     if override:
         return override.rstrip("/")
-    if hass.config.api and not hass.config.api.use_ssl:
-        return f"http://127.0.0.1:{hass.config.api.port}"
+    if (api := hass.config.api) and not api.use_ssl:
+        # api.host is the first configured server_host, or a wildcard address.
+        host = "127.0.0.1" if api.host in WILDCARD_HOSTS else api.host
+        if ":" in host:
+            host = f"[{host}]"
+        return f"http://{host}:{api.port}"
     try:
         return get_url(hass, allow_external=False, allow_cloud=False, prefer_external=False)
     except NoURLAvailableError:

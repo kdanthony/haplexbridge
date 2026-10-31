@@ -93,10 +93,18 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
 
 
 @pytest.fixture
+def mock_ffmpeg_check() -> Generator[AsyncMock]:
+    """Treat ffmpeg as capable without running it."""
+    with patch("custom_components.plex_camera.async_check_ffmpeg", return_value=None) as mock:
+        yield mock
+
+
+@pytest.fixture
 async def init_integration(
     hass: HomeAssistant,
     loaded_plex_entry: MockConfigEntry,
     mock_get_plex_server: MagicMock,
+    mock_ffmpeg_check: AsyncMock,
     config_entry: MockConfigEntry,
     aioclient_mock: AiohttpClientMocker,
 ) -> MockConfigEntry:

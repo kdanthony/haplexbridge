@@ -37,6 +37,7 @@ QUEUE_SIZE = 256  # ~3 MB of buffered TS per reader
 END_TOLERANCE = 10  # seconds from the end that counts as "finished"
 MAX_FAST_FAILURES = 3
 FAST_FAILURE_SECONDS = 15
+FFMPEG_CHECK_TIMEOUT = 30
 
 
 class PlaybackState(StrEnum):
@@ -450,3 +451,47 @@ async def _drain_stderr(proc: asyncio.subprocess.Process, number: int) -> str:
             last = line
             _LOGGER.debug("Channel %s ffmpeg: %s", number, line)
     return last
+
+
+async def async_check_ffmpeg(binary: str) -> str | None:
+    """
+    Return why ffmpeg can't produce channel feeds, or None if it can.
+
+    Feeds need the lavfi input (idle/paused slates) and the libx264 encoder,
+    which some distribution builds of ffmpeg leave out.
+    """
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            binary,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=black:s=64x64:r=1",
+            "-frames:v",
+            "1",
+            "-c:v",
+            "libx264",
+            "-f",
+            "null",
+            "-",
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except OSError as err:
+        _LOGGER.debug("Cannot run %s: %s", binary, err)
+        return "ffmpeg_missing"
+    try:
+        _, stderr = await asyncio.wait_for(proc.communicate(), FFMPEG_CHECK_TIMEOUT)
+    except TimeoutError:
+        proc.kill()
+        await proc.wait()
+        return "ffmpeg_unsupported"
+    if proc.returncode:
+        _LOGGER.debug("%s test encode failed: %s", binary, stderr.decode(errors="replace"))
+        return "ffmpeg_unsupported"
+    return None

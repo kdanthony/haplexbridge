@@ -1,7 +1,8 @@
 """Tests for Plex Camera setup."""
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.plex_camera.const import DOMAIN, PLEX_DOMAIN
@@ -54,3 +55,41 @@ async def test_plex_not_loaded(
     """Setup retries while the Plex entry is still loading."""
     await hass.config_entries.async_setup(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+@pytest.mark.parametrize("problem", ["ffmpeg_missing", "ffmpeg_unsupported"])
+async def test_ffmpeg_not_capable(
+    hass: HomeAssistant,
+    loaded_plex_entry: MockConfigEntry,
+    mock_get_plex_server: MagicMock,
+    config_entry: MockConfigEntry,
+    problem: str,
+) -> None:
+    """Setup fails with a clear reason when ffmpeg can't produce feeds."""
+    with patch("custom_components.plex_camera.async_check_ffmpeg", return_value=problem):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+    assert config_entry.state is ConfigEntryState.SETUP_ERROR
+    assert config_entry.error_reason_translation_key == problem
+
+
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    [
+        ("0.0.0.0", "http://127.0.0.1:8123"),
+        ("192.168.1.5", "http://192.168.1.5:8123"),
+        ("fd00::5", "http://[fd00::5]:8123"),
+    ],
+)
+async def test_stream_base_follows_bind_address(
+    hass: HomeAssistant,
+    loaded_plex_entry: MockConfigEntry,
+    mock_get_plex_server: MagicMock,
+    mock_ffmpeg_check: AsyncMock,
+    config_entry: MockConfigEntry,
+    host: str,
+    expected: str,
+) -> None:
+    """The camera reaches the feed on the address HA listens on."""
+    hass.config.api.host = host
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert config_entry.runtime_data.stream_base == expected
