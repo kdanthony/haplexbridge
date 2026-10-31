@@ -8,7 +8,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import PlexStreamBridgeConfigEntry
 from .channel import Channel, PlaybackState
-from .const import DOMAIN
+from .const import DOMAIN, STREAM_AUTH_PARAM
 from .entity import PlexChannelEntity
 
 PARALLEL_UPDATES = 0
@@ -35,7 +35,7 @@ class PlexChannelCamera(PlexChannelEntity, Camera):
         super().__init__(entry, channel, "camera")
         self._stream_url = (
             f"{entry.runtime_data.stream_base}/api/{DOMAIN}/{entry.entry_id}"
-            f"/{channel.number}/stream.ts?token={channel.access_token}"
+            f"/{channel.number}/stream.ts?{STREAM_AUTH_PARAM}={channel.access_token}"
         )
         self._image_key: tuple[str, int, int] | None = None
         self._image: bytes | None = None

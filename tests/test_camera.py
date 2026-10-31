@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 from custom_components.plex_stream_bridge.channel import PlaybackState
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.components.plex.models import PlexMediaSearchResult
+from homeassistant.components.stream import redact_credentials
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
@@ -31,8 +32,18 @@ async def test_stream_source(hass: HomeAssistant, init_integration: MockConfigEn
     source = await async_get_stream_source(hass, CAMERA)
     assert source == (
         f"http://127.0.0.1:8123/api/plex_stream_bridge/{init_integration.entry_id}"
-        f"/1/stream.ts?token={channel.access_token}"
+        f"/1/stream.ts?auth={channel.access_token}"
     )
+
+
+async def test_stream_token_redacted_in_ha_logs(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """HA's stream component masks the channel token when it logs the URL."""
+    channel = init_integration.runtime_data.channels[0]
+    source = await async_get_stream_source(hass, CAMERA)
+    assert channel.access_token in source
+    assert channel.access_token not in redact_credentials(source)
 
 
 async def test_camera_image(
@@ -66,9 +77,9 @@ async def test_camera_image(
 @pytest.mark.parametrize(
     ("path", "status"),
     [
-        ("missing-entry/1/stream.ts?token=x", 404),
-        ("{entry_id}/9/stream.ts?token=x", 404),
-        ("{entry_id}/1/stream.ts?token=wrong", 401),
+        ("missing-entry/1/stream.ts?auth=x", 404),
+        ("{entry_id}/9/stream.ts?auth=x", 404),
+        ("{entry_id}/1/stream.ts?auth=wrong", 401),
         ("{entry_id}/1/stream.ts", 401),
     ],
 )
@@ -184,7 +195,7 @@ async def test_feed_end_to_end(
     channel._ffmpeg = FFMPEG
     assert _probe(hls_playlist)[2] > 0, "the stand-in Plex stream should have B-frames"
     client = await hass_client_no_auth()
-    url = f"/api/plex_stream_bridge/{init_integration.entry_id}/1/stream.ts?token={channel.access_token}"
+    url = f"/api/plex_stream_bridge/{init_integration.entry_id}/1/stream.ts?auth={channel.access_token}"
 
     _, eof = await _read(client, url, 2, tmp_path / "idle.ts")
     assert not eof
@@ -223,7 +234,7 @@ async def test_feed_end_to_end(
 
 
 async def _feed_body(client, channel, entry_id: str) -> bytes:
-    url = f"/api/plex_stream_bridge/{entry_id}/1/stream.ts?token={channel.access_token}"
+    url = f"/api/plex_stream_bridge/{entry_id}/1/stream.ts?auth={channel.access_token}"
     async with client.get(url) as resp:
         assert resp.status == 200
         return await asyncio.wait_for(resp.read(), 10)

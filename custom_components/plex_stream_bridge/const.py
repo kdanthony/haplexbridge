@@ -8,6 +8,10 @@ DOMAIN: Final = "plex_stream_bridge"
 PLEX_DOMAIN: Final = "plex"
 PLEX_URI_SCHEME: Final = "plex://"
 
+# Query parameter carrying a channel's stream token. HA's stream component
+# redacts "auth" when it logs a stream URL, so don't rename it to "token".
+STREAM_AUTH_PARAM: Final = "auth"
+
 CONF_SERVER_IDENTIFIER: Final = "server_id"
 CONF_CLIENT_ID: Final = "client_identifier"
 CONF_CHANNELS: Final = "channels"

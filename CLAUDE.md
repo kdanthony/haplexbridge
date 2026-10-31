@@ -17,7 +17,7 @@ custom_components/plex_stream_bridge/
   config_flow.py   pick a loaded Plex integration server; options flow (OptionsFlowWithReload)
   plex.py          PlexBridge: everything that touches Plex, via the Plex integration
   channel.py       Channel: playback state + ffmpeg feed + fan-out; async_check_ffmpeg
-  view.py          /api/plex_stream_bridge/<entry_id>/<n>/stream.ts?token=... (requires_auth=False)
+  view.py          /api/plex_stream_bridge/<entry_id>/<n>/stream.ts?auth=... (requires_auth=False)
   entity.py        PlexChannelEntity base (device info, availability, follows channel state)
   diagnostics.py   config entry diagnostics (client id redacted; never tokens or URLs)
   camera.py        PlexChannelCamera: stream_source -> the view; still image = artwork
@@ -75,6 +75,9 @@ tests/             pytest-homeassistant-custom-component suite
 - **Plex returns 400 on `start.m3u8` unless `/video/:/transcode/universal/decision`
   is requested first** with the same params. `PlexBridge.async_hls_url` always
   does that; keep it.
+- **Stream token parameter is `auth`** (`STREAM_AUTH_PARAM`): HA's stream
+  component logs the camera's stream URL on worker errors and only masks
+  `auth`, `user` and `password` query parameters. Don't rename it.
 - **Never log the Plex token.** ffmpeg prints input URLs (which carry
   `X-Plex-Token`) in its errors, so every logged ffmpeg line and Plex error
   goes through `redact_token`.

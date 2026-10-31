@@ -199,7 +199,8 @@ through unchanged if you only watch over HLS or your media has no B-frames.
 - Each channel's feed is served at `/api/plex_stream_bridge/…` without Home
   Assistant login, because HA's stream worker and go2rtc can't send it. Access
   needs that channel's random 256-bit token, which is regenerated on every
-  restart and only given to HA's own stream components.
+  restart and only given to HA's own stream components. It's passed in a
+  parameter HA masks when it logs stream URLs.
 - ffmpeg connects to Plex with TLS verification whenever the Plex integration
   verifies SSL, and Plex inputs are limited to network protocols.
 - ffmpeg receives the Plex stream URL, which includes your Plex token, on its
