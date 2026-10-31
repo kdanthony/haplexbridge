@@ -31,7 +31,7 @@ from .const import (
     PLEX_DOMAIN,
 )
 from .plex import PlexBridge
-from .view import PlexCameraStreamView
+from .view import PlexStreamBridgeStreamView
 
 PLATFORMS = [Platform.CAMERA, Platform.MEDIA_PLAYER]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -39,7 +39,7 @@ WILDCARD_HOSTS = {"0.0.0.0", "::", ""}
 
 
 @dataclass
-class PlexCameraData:
+class PlexStreamBridgeData:
     """Runtime data for one Plex server's channels."""
 
     bridge: PlexBridge
@@ -48,16 +48,16 @@ class PlexCameraData:
     via_device_id: str | None
 
 
-type PlexCameraConfigEntry = ConfigEntry[PlexCameraData]
+type PlexStreamBridgeConfigEntry = ConfigEntry[PlexStreamBridgeData]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the stream endpoint shared by all entries."""
-    hass.http.register_view(PlexCameraStreamView())
+    hass.http.register_view(PlexStreamBridgeStreamView())
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: PlexCameraConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEntry) -> bool:
     """Set up channels for a server from the Plex integration."""
     server_id: str = entry.data[CONF_SERVER_IDENTIFIER]
     plex_entry = hass.config_entries.async_entry_for_domain_unique_id(PLEX_DOMAIN, server_id)
@@ -99,7 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexCameraConfigEntry) -
     plex_device = dr.async_get(hass).async_get_device_by_identifier(
         (PLEX_DOMAIN, server_id), plex_entry.entry_id
     )
-    entry.runtime_data = PlexCameraData(
+    entry.runtime_data = PlexStreamBridgeData(
         bridge,
         channels,
         _stream_base(hass, options.get(CONF_LOCAL_URL)),
@@ -110,7 +110,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlexCameraConfigEntry) -
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: PlexCameraConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: PlexStreamBridgeConfigEntry) -> bool:
     """Unload a config entry."""
     if unloaded := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         for channel in entry.runtime_data.channels:

@@ -1,4 +1,4 @@
-# Plex Camera for Home Assistant
+# Plex Stream Bridge for Home Assistant
 
 Watch Plex movies and TV inside a Home Assistant dashboard. Each **channel**
 is a device with two entities:
@@ -9,7 +9,7 @@ is a device with two entities:
   camera (picture-entity, picture-glance, the more-info dialog) becomes the
   screen.
 
-Plex Camera builds on the built-in [Plex integration](https://www.home-assistant.io/integrations/plex/):
+Plex Stream Bridge builds on the built-in [Plex integration](https://www.home-assistant.io/integrations/plex/):
 it uses that integration's server connection, credentials, media browser and
 `plex://` media IDs, the same way the Sonos and Google Cast integrations do.
 It has no credentials of its own.
@@ -53,7 +53,7 @@ stream worker** in the options.
 ## How it works
 
 ```
-Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /api/plex_camera/… ──▶ HA stream / go2rtc ──▶ dashboard
+Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /api/plex_stream_bridge/… ──▶ HA stream / go2rtc ──▶ dashboard
   (transcodes)                     (paces to               (one feed shared            (HLS / WebRTC)
                                     real time)              by every reader)
 ```
@@ -72,10 +72,10 @@ Plex Media Server ──HLS (H.264)──▶ ffmpeg -re ──MPEG-TS──▶ /
 
 ## Install
 
-1. Copy `custom_components/plex_camera` into your HA `config/custom_components/`
+1. Copy `custom_components/plex_stream_bridge` into your HA `config/custom_components/`
    folder (or add this repository to HACS as a custom repository).
 2. Restart Home Assistant.
-3. **Settings → Devices & services → Add integration → Plex Camera**, and pick
+3. **Settings → Devices & services → Add integration → Plex Stream Bridge**, and pick
    your Plex server.
 4. Optional: **Configure** to set the number of channels (1–4), maximum
    resolution and bitrate, or to turn off video re-encoding.
@@ -148,7 +148,7 @@ through unchanged if you only watch over HLS or your media has no B-frames.
 pip install pytest-homeassistant-custom-component ruff mypy
 pytest
 ruff check . && ruff format --check .
-mypy --strict --implicit-reexport --allow-untyped-calls --ignore-missing-imports custom_components/plex_camera
+mypy --strict --implicit-reexport --allow-untyped-calls --ignore-missing-imports custom_components/plex_stream_bridge
 ```
 
 The end-to-end feed test needs `ffmpeg` on the PATH; it is skipped otherwise.

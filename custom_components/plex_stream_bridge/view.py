@@ -13,12 +13,12 @@ from homeassistant.config_entries import ConfigEntryState
 from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from . import PlexCameraConfigEntry
+    from . import PlexStreamBridgeConfigEntry
 
 
-class PlexCameraStreamView(HomeAssistantView):
+class PlexStreamBridgeStreamView(HomeAssistantView):
     """
-    Serve /api/plex_camera/<entry>/<channel>/stream.ts?token=...
+    Serve /api/plex_stream_bridge/<entry>/<channel>/stream.ts?token=...
 
     The camera hands this URL to HA's stream worker (and go2rtc), which cannot
     send HA auth headers, so each channel has its own random access token.
@@ -33,7 +33,7 @@ class PlexCameraStreamView(HomeAssistantView):
         entry = request.app[KEY_HASS].config_entries.async_get_entry(entry_id)
         if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
             raise web.HTTPNotFound
-        channels = cast("PlexCameraConfigEntry", entry).runtime_data.channels
+        channels = cast("PlexStreamBridgeConfigEntry", entry).runtime_data.channels
         if not number.isdigit() or not 0 < int(number) <= len(channels):
             raise web.HTTPNotFound
         channel = channels[int(number) - 1]

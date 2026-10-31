@@ -1,4 +1,4 @@
-"""Config and options flow for Plex Camera."""
+"""Config and options flow for Plex Stream Bridge."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ OPTIONS_SCHEMA = probatio.Schema(
 )
 
 
-class PlexCameraConfigFlow(ConfigFlow, domain=DOMAIN):
+class PlexStreamBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Add channels to a server already set up in the Plex integration."""
 
     VERSION = 1
@@ -119,12 +119,12 @@ class PlexCameraConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> PlexCameraOptionsFlow:
+    def async_get_options_flow(config_entry: ConfigEntry) -> PlexStreamBridgeOptionsFlow:
         """Get the options flow."""
-        return PlexCameraOptionsFlow()
+        return PlexStreamBridgeOptionsFlow()
 
 
-class PlexCameraOptionsFlow(OptionsFlowWithReload):
+class PlexStreamBridgeOptionsFlow(OptionsFlowWithReload):
     """Tune channel count and stream quality."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

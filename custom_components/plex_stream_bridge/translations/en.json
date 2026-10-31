@@ -3,21 +3,21 @@
     "step": {
       "user": {
         "title": "Choose a Plex server",
-        "description": "Plex Camera uses the connection of a server already set up in the Plex integration.",
+        "description": "Plex Stream Bridge uses the connection of a server already set up in the Plex integration.",
         "data": {
           "server_id": "Plex server"
         }
       }
     },
     "abort": {
-      "already_configured": "This Plex server already has Plex Camera channels.",
+      "already_configured": "This Plex server already has Plex Stream Bridge channels.",
       "no_plex_servers": "No unconfigured Plex servers found. Set up and load the Plex integration first."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Plex Camera options",
+        "title": "Plex Stream Bridge options",
         "data": {
           "channels": "Number of channels",
           "max_resolution": "Maximum resolution",
@@ -73,7 +73,7 @@
       "message": "ffmpeg was not found at {binary}. Install ffmpeg (or set ffmpeg_bin in the ffmpeg configuration) and restart Home Assistant."
     },
     "ffmpeg_unsupported": {
-      "message": "ffmpeg at {binary} cannot encode H.264 with libx264, which Plex Camera needs. Install an ffmpeg build with libx264 and restart Home Assistant."
+      "message": "ffmpeg at {binary} cannot encode H.264 with libx264, which Plex Stream Bridge needs. Install an ffmpeg build with libx264 and restart Home Assistant."
     }
   }
 }

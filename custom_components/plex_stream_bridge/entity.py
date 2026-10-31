@@ -1,4 +1,4 @@
-"""Base entity for Plex Camera channels."""
+"""Base entity for Plex Stream Bridge channels."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .channel import Channel
 from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from . import PlexCameraConfigEntry
+    from . import PlexStreamBridgeConfigEntry
 
 
 class PlexChannelEntity(Entity):
@@ -20,7 +20,7 @@ class PlexChannelEntity(Entity):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
-    def __init__(self, entry: PlexCameraConfigEntry, channel: Channel, key: str) -> None:
+    def __init__(self, entry: PlexStreamBridgeConfigEntry, channel: Channel, key: str) -> None:
         """Initialize."""
         super().__init__()
         self._channel = channel

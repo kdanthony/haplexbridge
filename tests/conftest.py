@@ -1,4 +1,4 @@
-"""Fixtures for Plex Camera tests."""
+"""Fixtures for Plex Stream Bridge tests."""
 
 from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,7 +8,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.plex_camera.const import (
+from custom_components.plex_stream_bridge.const import (
     CONF_CLIENT_ID,
     CONF_SERVER_IDENTIFIER,
     DOMAIN,
@@ -74,14 +74,14 @@ def mock_get_plex_server(plexapi_server: MagicMock) -> Generator[MagicMock]:
     """Patch the Plex integration's server lookup."""
     ha_server = MagicMock(plex_server=plexapi_server)
     with patch(
-        "custom_components.plex_camera.plex.get_plex_server", return_value=ha_server
+        "custom_components.plex_stream_bridge.plex.get_plex_server", return_value=ha_server
     ) as mock:
         yield mock
 
 
 @pytest.fixture
 def config_entry(hass: HomeAssistant) -> MockConfigEntry:
-    """A Plex Camera entry."""
+    """A Plex Stream Bridge entry."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id=SERVER_ID,
@@ -95,7 +95,9 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
 @pytest.fixture
 def mock_ffmpeg_check() -> Generator[AsyncMock]:
     """Treat ffmpeg as capable without running it."""
-    with patch("custom_components.plex_camera.async_check_ffmpeg", return_value=None) as mock:
+    with patch(
+        "custom_components.plex_stream_bridge.async_check_ffmpeg", return_value=None
+    ) as mock:
         yield mock
 
 
@@ -108,7 +110,7 @@ async def init_integration(
     config_entry: MockConfigEntry,
     aioclient_mock: AiohttpClientMocker,
 ) -> MockConfigEntry:
-    """Set up Plex Camera on top of the Plex integration."""
+    """Set up Plex Stream Bridge on top of the Plex integration."""
     aioclient_mock.get(f"{PLEX_URL}/video/:/transcode/universal/stop")
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
@@ -160,7 +162,7 @@ def make_show(on_deck: MagicMock | None) -> MagicMock:
 @pytest.fixture
 def mock_payload() -> Generator[MagicMock]:
     """Patch process_plex_payload."""
-    with patch("custom_components.plex_camera.plex.process_plex_payload") as mock:
+    with patch("custom_components.plex_stream_bridge.plex.process_plex_payload") as mock:
         yield mock
 
 

@@ -1,10 +1,10 @@
-"""Constants for the Plex Camera integration."""
+"""Constants for the Plex Stream Bridge integration."""
 
 from __future__ import annotations
 
 from typing import Final
 
-DOMAIN: Final = "plex_camera"
+DOMAIN: Final = "plex_stream_bridge"
 PLEX_DOMAIN: Final = "plex"
 PLEX_URI_SCHEME: Final = "plex://"
 
@@ -26,7 +26,7 @@ RESOLUTIONS: Final = ["854x480", "1280x720", "1920x1080"]
 # Plex picks a transcode profile from the product/platform pair. "Plex Web" on
 # "Chrome" (plexapi's default platform) reliably yields H.264 over HLS.
 PLEX_PRODUCT: Final = "Plex Web"
-PLEX_DEVICE_NAME: Final = "Home Assistant Plex Camera"
+PLEX_DEVICE_NAME: Final = "Home Assistant Plex Stream Bridge"
 PLEX_PROFILE_EXTRA: Final = (
     "add-transcode-target(type=videoProfile&context=streaming&protocol=hls"
     "&container=mpegts&videoCodec=h264&audioCodec=aac)"

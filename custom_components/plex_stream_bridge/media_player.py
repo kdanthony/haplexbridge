@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import PlexCameraConfigEntry
+from . import PlexStreamBridgeConfigEntry
 from .channel import Channel, PlaybackState
 from .const import DOMAIN
 from .entity import PlexChannelEntity
@@ -35,7 +35,7 @@ MEDIA_TYPE_MAP = {"movie": MediaType.MOVIE, "episode": MediaType.EPISODE}
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: PlexCameraConfigEntry,
+    entry: PlexStreamBridgeConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add a media player per channel."""
@@ -58,7 +58,7 @@ class PlexChannelMediaPlayer(PlexChannelEntity, MediaPlayerEntity):
         | MediaPlayerEntityFeature.SEEK
     )
 
-    def __init__(self, entry: PlexCameraConfigEntry, channel: Channel) -> None:
+    def __init__(self, entry: PlexStreamBridgeConfigEntry, channel: Channel) -> None:
         """Initialize."""
         super().__init__(entry, channel, "media_player")
 

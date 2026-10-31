@@ -1,4 +1,4 @@
-"""Tests for the Plex Camera camera and its stream endpoint."""
+"""Tests for the Plex Stream Bridge camera and its stream endpoint."""
 
 import asyncio
 from pathlib import Path
@@ -11,7 +11,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.plex_camera.channel import PlaybackState
+from custom_components.plex_stream_bridge.channel import PlaybackState
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.components.plex.models import PlexMediaSearchResult
 from homeassistant.core import HomeAssistant
@@ -28,7 +28,7 @@ async def test_stream_source(hass: HomeAssistant, init_integration: MockConfigEn
     channel = init_integration.runtime_data.channels[0]
     source = await async_get_stream_source(hass, CAMERA)
     assert source == (
-        f"http://127.0.0.1:8123/api/plex_camera/{init_integration.entry_id}"
+        f"http://127.0.0.1:8123/api/plex_stream_bridge/{init_integration.entry_id}"
         f"/1/stream.ts?token={channel.access_token}"
     )
 
@@ -79,7 +79,9 @@ async def test_stream_view_rejects(
 ) -> None:
     """The feed needs a known channel and its token."""
     client = await hass_client_no_auth()
-    resp = await client.get(f"/api/plex_camera/{path.format(entry_id=init_integration.entry_id)}")
+    resp = await client.get(
+        f"/api/plex_stream_bridge/{path.format(entry_id=init_integration.entry_id)}"
+    )
     assert resp.status == status
 
 
@@ -170,7 +172,7 @@ async def test_feed_end_to_end(
     channel._ffmpeg = FFMPEG
     assert _probe(hls_playlist)[2] > 0, "the stand-in Plex stream should have B-frames"
     client = await hass_client_no_auth()
-    url = f"/api/plex_camera/{init_integration.entry_id}/1/stream.ts?token={channel.access_token}"
+    url = f"/api/plex_stream_bridge/{init_integration.entry_id}/1/stream.ts?token={channel.access_token}"
 
     _, eof = await _read(client, url, 2, tmp_path / "idle.ts")
     assert not eof

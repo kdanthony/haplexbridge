@@ -187,7 +187,7 @@ class Channel:
         readers.add(queue)
         if self._producer is None or self._producer.done():
             self._producer = self.hass.async_create_background_task(
-                self._run_producer(), f"plex_camera channel {self.number} feed"
+                self._run_producer(), f"plex_stream_bridge channel {self.number} feed"
             )
 
         response = web.StreamResponse(
@@ -237,7 +237,7 @@ class Channel:
             return
 
         stderr_task = self.hass.async_create_background_task(
-            _drain_stderr(proc, self.number), f"plex_camera channel {self.number} ffmpeg log"
+            _drain_stderr(proc, self.number), f"plex_stream_bridge channel {self.number} ffmpeg log"
         )
         try:
             assert proc.stdout is not None

@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from custom_components.plex_camera.channel import async_check_ffmpeg
+from custom_components.plex_stream_bridge.channel import async_check_ffmpeg
 
 FFMPEG = shutil.which("ffmpeg")
 

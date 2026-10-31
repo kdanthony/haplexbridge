@@ -1,10 +1,10 @@
-"""Tests for the Plex Camera config flow."""
+"""Tests for the Plex Stream Bridge config flow."""
 
 from unittest.mock import MagicMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.plex_camera.const import (
+from custom_components.plex_stream_bridge.const import (
     CONF_CHANNELS,
     CONF_CLIENT_ID,
     CONF_MAX_BITRATE,

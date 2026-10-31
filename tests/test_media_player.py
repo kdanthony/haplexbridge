@@ -1,4 +1,4 @@
-"""Tests for the Plex Camera media player."""
+"""Tests for the Plex Stream Bridge media player."""
 
 from unittest.mock import AsyncMock, MagicMock
 
@@ -169,4 +169,4 @@ async def test_browse_media(
     response = await client.receive_json()
     assert response["success"]
     assert response["result"]["title"] == "Plex"
-    mock_browse.assert_awaited_once_with(hass, None, None, platform="plex_camera")
+    mock_browse.assert_awaited_once_with(hass, None, None, platform="plex_stream_bridge")

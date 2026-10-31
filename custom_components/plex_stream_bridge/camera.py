@@ -6,7 +6,7 @@ from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import PlexCameraConfigEntry
+from . import PlexStreamBridgeConfigEntry
 from .channel import Channel, PlaybackState
 from .const import DOMAIN
 from .entity import PlexChannelEntity
@@ -16,7 +16,7 @@ PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: PlexCameraConfigEntry,
+    entry: PlexStreamBridgeConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add a camera per channel."""
@@ -30,7 +30,7 @@ class PlexChannelCamera(PlexChannelEntity, Camera):
     _attr_brand = "Plex"
     _attr_supported_features = CameraEntityFeature.STREAM
 
-    def __init__(self, entry: PlexCameraConfigEntry, channel: Channel) -> None:
+    def __init__(self, entry: PlexStreamBridgeConfigEntry, channel: Channel) -> None:
         """Initialize."""
         super().__init__(entry, channel, "camera")
         self._stream_url = (

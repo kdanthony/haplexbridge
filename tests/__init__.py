@@ -1,1 +1,1 @@
-"""Tests for the Plex Camera integration."""
+"""Tests for the Plex Stream Bridge integration."""

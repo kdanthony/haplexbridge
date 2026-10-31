@@ -1,11 +1,11 @@
-"""Tests for Plex Camera setup."""
+"""Tests for Plex Stream Bridge setup."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.plex_camera.const import DOMAIN, PLEX_DOMAIN
+from custom_components.plex_stream_bridge.const import DOMAIN, PLEX_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -66,7 +66,7 @@ async def test_ffmpeg_not_capable(
     problem: str,
 ) -> None:
     """Setup fails with a clear reason when ffmpeg can't produce feeds."""
-    with patch("custom_components.plex_camera.async_check_ffmpeg", return_value=problem):
+    with patch("custom_components.plex_stream_bridge.async_check_ffmpeg", return_value=problem):
         await hass.config_entries.async_setup(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
     assert config_entry.error_reason_translation_key == problem

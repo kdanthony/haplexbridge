@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.plex_camera.plex import PlexBridge, PlexItem
+from custom_components.plex_stream_bridge.plex import PlexBridge, PlexItem
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
