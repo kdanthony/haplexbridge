@@ -213,3 +213,8 @@ mypy --strict --implicit-reexport --allow-untyped-calls --ignore-missing-imports
 ```
 
 The end-to-end feed test needs `ffmpeg` on the PATH; it is skipped otherwise.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE), the same license as Home
+Assistant. As noted at the top, this project's code was AI-generated.
