@@ -8,3 +8,6 @@ htmlcov/
 .venv/
 venv/
 .DS_Store
+
+# Personal Claude Code notes (hostnames, ids)
+CLAUDE.local.md
