@@ -1,5 +1,12 @@
 # Plex Stream Bridge for Home Assistant
 
+> [!NOTE]
+> **AI-generated.** The code, tests and documentation in this repository were
+> written by an AI model (Anthropic's Claude, using Claude Code). The maintainer
+> directed the work and tested it on a real Home Assistant installation, but the
+> code hasn't had an independent human review. Read it before relying on it, and
+> report problems as issues.
+
 Watch Plex movies and TV inside a Home Assistant dashboard. Each **channel**
 is a device with two entities:
 
