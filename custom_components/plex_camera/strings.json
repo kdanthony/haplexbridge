@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose a Plex server",
+        "description": "Plex Camera uses the connection of a server already set up in the Plex integration.",
+        "data": {
+          "server_id": "Plex server"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This Plex server already has Plex Camera channels.",
+      "no_plex_servers": "No unconfigured Plex servers found. Set up and load the Plex integration first."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Plex Camera options",
+        "data": {
+          "channels": "Number of channels",
+          "max_resolution": "Maximum resolution",
+          "max_bitrate": "Maximum video bitrate",
+          "reencode_video": "Re-encode video for smooth WebRTC playback",
+          "local_url": "Home Assistant URL for the stream worker"
+        },
+        "data_description": {
+          "channels": "Each channel is a camera and a media player that play one video at a time.",
+          "reencode_video": "Removes B-frames, which WebRTC (the default camera player) cannot play smoothly. Uses about one CPU core on the Home Assistant host while someone is watching. Turn off to pass Plex's video through unchanged.",
+          "local_url": "Leave empty to use http://127.0.0.1:<port>. Only needed if Home Assistant cannot reach itself that way."
+        }
+      }
+    }
+  },
+  "selector": {
+    "max_resolution": {
+      "options": {
+        "854x480": "480p",
+        "1280x720": "720p",
+        "1920x1080": "1080p"
+      }
+    }
+  },
+  "device": {
+    "channel": {
+      "name": "Plex channel {number}"
+    }
+  },
+  "exceptions": {
+    "plex_entry_missing": {
+      "message": "The Plex server this entry uses is no longer set up in the Plex integration."
+    },
+    "plex_not_loaded": {
+      "message": "The Plex integration has not finished loading this server."
+    },
+    "server_unavailable": {
+      "message": "The Plex server is not currently connected."
+    },
+    "not_plex_media": {
+      "message": "{media_id} is not Plex media. Use a plex:// media ID, for example from the media browser."
+    },
+    "unsupported_media": {
+      "message": "Plex {type} items cannot be played on a channel; choose a movie, show, season or episode."
+    },
+    "lookup_failed": {
+      "message": "Could not look up the Plex media: {error}"
+    },
+    "transcode_refused": {
+      "message": "Plex refused to transcode the media (HTTP {status})."
+    }
+  }
+}
